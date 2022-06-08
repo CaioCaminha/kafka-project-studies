@@ -1,5 +1,6 @@
 package br.com.caminha.ecommerce;
 
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -17,13 +18,18 @@ public class NewOrderMain {
         //o metodo send recebe também uma interface que tem apenas um metodo sendo possivel
         //passar uma lambda expression implementando o metodo dessa interface que recebe um metadata
         // e uma exception, sendo assim e possivel passar uma açao para ser executada em caso de sucesso ou falha
-        producer.send(record, (data, ex) -> {
-            if(ex != null){
+        Callback callback = (data, ex) -> {
+            if (ex != null) {
                 ex.printStackTrace();
                 return;
             }
             System.out.println("sucesso enviando " + data.topic() + ":::partition" + data.partition() + "/offset " + data.offset() + "/timestamp " + data.timestamp());
-        }).get();
+        };
+        var email = "Welcome! We are processing your order";
+        var emailRecord = new ProducerRecord("ECOMMERCE_SEND_EMAIL", email, email);
+        producer.send(record, callback).get();
+        producer.send(emailRecord, callback).get();
+
     }
 
     private static Properties properties(){

@@ -1,38 +1,31 @@
 package br.com.caminha.ecommerce;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.UUID;
+import java.util.regex.Pattern;
 
-public class FraudDetectorService {
+public class LogService {
 
     public static void main(String[] args) {
         var consumer = new KafkaConsumer<String, String>(properties());
-        consumer.subscribe(Collections.singletonList("ECOMMERCE_NEW_ORDER"));
+        //regular expression to return every topic that starts with ECOMMERCE
+        consumer.subscribe(Pattern.compile("ECOMMERCE.*"));
         while(true){
             var records = consumer.poll(Duration.ofMillis(100));
             if(!records.isEmpty()){
                 System.out.println("Registros encontrados");
                 for(var record : records){
                     System.out.println("--------------------------------------");
-                    System.out.println("Processing new order, checking for fraud");
+                    System.out.println("LOG: " + record.topic());
                     System.out.println(record.key());
                     System.out.println(record.value());
                     System.out.println(record.partition());
                     System.out.println(record.offset());
-                    try{
-                        Thread.sleep(1000);
-                    }catch (InterruptedException ex){
-                        ex.printStackTrace();
-                    }
-                    System.out.println("Order processed");
                 }
             }
         }
@@ -44,8 +37,7 @@ public class FraudDetectorService {
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         //cada consumer deve pertencer a um group para segregar a entrega das mensagens
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, FraudDetectorService.class.getSimpleName());
-        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, FraudDetectorService.class.getSimpleName() + "-" + UUID.randomUUID().toString());
+        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, LogService.class.getSimpleName());
         return properties;
     }
 }
